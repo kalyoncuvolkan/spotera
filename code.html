@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Stitch Design - Influencer & Foodie App</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#ec6d13",
+              "background-light": "#f8f7f6",
+              "background-dark": "#181411",
+              "surface-dark": "#27201c",
+              "surface-input": "#392f28",
+            },
+            fontFamily: {
+              display: ["Plus Jakarta Sans", "Noto Sans", "sans-serif"],
+              sans: ["Plus Jakarta Sans", "Noto Sans", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              "2xl": "1rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- React Dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script crossorigin src="https://unpkg.com/history@5/umd/history.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      body { min-height: max(884px, 100dvh); }
+      .toast { animation: slideIn 0.3s ease-out; }
+      @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .new-post-animation { animation: newPostSlide 0.8s ease-out forwards; }
+      @keyframes newPostSlide {
+        0% { transform: translateY(-100%); opacity: 0; max-height: 0; }
+        50% { opacity: 0.5; }
+        100% { transform: translateY(0); opacity: 1; max-height: 600px; }
+      }
+      .shimmer {
+        background: linear-gradient(90deg, #27201c 0%, #392f28 50%, #27201c 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+      @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(236, 109, 19, 0.4); } 50% { box-shadow: 0 0 20px 10px rgba(236, 109, 19, 0.2); } }
+      .modal-overlay { animation: fadeIn 0.3s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .modal-content { animation: slideUp 0.3s ease-out; }
+      @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .score-up { animation: scoreUp 1.5s ease-out forwards; }
+      @keyframes scoreUp {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.3); color: #22c55e; }
+        100% { transform: scale(1); }
+      }
+      .score-down { animation: scoreDown 1.5s ease-out forwards; }
+      @keyframes scoreDown {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.3); color: #ef4444; }
+        100% { transform: scale(1); }
+      }
+      .float-up { animation: floatUp 2s ease-out forwards; }
+      @keyframes floatUp {
+        0% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-50px); }
+      }
+    </style>
+  </head>
+  <body class="bg-[#181411] text-white font-display">
+    <div id="root"></div>
+
+    <!-- Loading indicator -->
+    <script>
+      document.getElementById('root').innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><p>Yükleniyor...</p></div>';
+      window.onerror = function(msg, url, line) {
+        document.getElementById('root').innerHTML = '<div style="padding:20px;color:red;"><h2>Hata:</h2><p>' + msg + '</p><p>Satır: ' + line + '</p></div>';
+        return false;
+      };
+    </script>
+
+    <script type="text/babel" data-presets="react">
+      const { useState, useEffect, createContext, useContext, useCallback } = React;
+      const { createRoot } = ReactDOM;
+      const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation, useParams } = ReactRouterDOM;
+
+      // ==================== MOCK DATA ====================
+      const MOCK_USERS = [
+        { id: 1, username: "ayse_yilmaz", name: "Ayşe Yılmaz", email: "ayse@email.com", password: "123456", bio: "Yemek Tutkunu | Seyahat Aşığı 🍴✈️", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCI9FEzWxct6uBnSbrT9ZHcPGcVLO8fhMCIVva0MIyCUYwSQzn6T3mRqP8lHxG0BDSJSKuYU1rfIimZtgvHdZF9c0cV6mSdE-VeOBErxj5ZDUfRT6NkJ3JwMZdqLRMQQPwqZabVtTmIgcNLRjIZGgREk1ERETxvDKUe6iSeNvIlr7uHj4E9f_0elQPuVM4syMhg1a4Xe46s3FN8R5XHpTwR4qiB74-R8FNbnmeDVaTgpFemWUVkxBb3K6UTgZLeg2MsMNBqKBm03gre", credibility: 4.8, followers: 1200000, following: 342, totalReviews: 156, verifiedReviews: 142 },
+        { id: 2, username: "mertcan_kizilkaya", name: "Mertcan Kızılkaya", email: "mertcan@email.com", password: "123456", bio: "Gurme & Seyahat Tutkunu 🌍🍴", avatar: "mertcanprofile.jpg", credibility: 4.7, followers: 950000, following: 128, totalReviews: 203, verifiedReviews: 189 },
+        { id: 3, username: "zeynep_gurme", name: "Zeynep Demir", email: "zeynep@email.com", password: "123456", bio: "Gurme & Lezzet Avcısı 🍣", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuB79ewF0mPLedkYUXHsUe8IuOGfx4qTkKeIAu6-g9bY_dtYhOLJ2U5U3qRUAYdkhKVpN0abooQV_1CWH7bBVV28zFyq5IgpmMxiAPivZpSt2KPbLkj2Cgam1NBCitpkP0LpiVD3m2yjlqbITumqrylId04HgamUDCb5hIiwVfXnkQqnswdkjsWbAhL29TGsTdf6gGo8dVutIQNBL4PYWMPZBMMudxujgNS7ViijAqlwGzMIQQiJFH878CqPOuR5hT_8HkqDW6P-E2g0", credibility: 4.9, followers: 620000, following: 89, totalReviews: 178, verifiedReviews: 171 },
+        { id: 4, username: "ali_lezzet", name: "Ali Öztürk", email: "ali@email.com", password: "123456", bio: "Sokak Lezzetleri Uzmanı 🍔", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBvcboRUC_A2d4zBgTnm2xQ552SBFcCP4PCfEUkyFkbOQcTSPEjizSACvQHkI3VSt3WC0XC2VYXuHsnEA34ceaHbr7Eu4jJyUyLa20BQl51D4vfF6A4uxEjCd6qV1Sjj3vQ_HoCltvKqWWW8oWwGNYA2igVPhtM0dKpv4gCAsYBWCSOXoG12G9LL9GnpTMesd4YPy1pHE6tV2Sh70eYT92xFP73uRjavOW2MqQxpWpDpJ2uzAz0aHqvoFQxBMCjQyl-2KQkY8SDi3Qh", credibility: 4.5, followers: 430000, following: 201, totalReviews: 95, verifiedReviews: 82 },
+        { id: 5, username: "elif_foodie", name: "Elif Şahin", email: "elif@email.com", password: "123456", bio: "Yemek için yaşıyorum 🍕", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCX6aQwZ4P8Z5ocmKlB2cnSQKdb7zfEycd4Pbd0wW0PwCqS-LB09IyVE6MklTzMZfQQGGCNw6ZvgKvuWcKokkao1RUcUq_SW6N7uu6WuxtGuTk-qdZ5RlU9rRwvPTNtgEsfDPj1KQ6D8VR11Ay2GZTxGlRfVisTjxyCZxXjrrQzlc4Kh4OQ7ILJmRQrtgBjqWT2E63NA_PrCuHnEYYIPuuci1D4pq6RRKsRuuEB5J2dVJiUBQxx9plWj5TBgsx9DHDKu0WWfZskmFfM", credibility: 4.7, followers: 980000, following: 156, totalReviews: 134, verifiedReviews: 128 },
+        { id: 6, username: "burak_sef", name: "Burak Aksoy", email: "burak@email.com", password: "123456", bio: "Profesyonel Şef 👨‍🍳", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBLemC8krGrZgQTavW1c5XW9TYDbfUnO4-VNdrmPB_yCHQp4iKvpdzOjEXj3kplmC97R3MrURA8Cz3PHN9SnsdYY-j6n6p7x4BY252dBaAl_tqc_u3ZZZfIWkFkSeAAoDbTE7xe4EE9xE0PvHp42aH9AsZyhp-qs3rEW-F0_P7S7CIFyZiw2ySWTjPBjm8puOk7BlKQEobh_cxR6z43czEglRjFIdMuE-QIfySIq2ZOJQXzqFz6z-P2WjcprKA6mLg3E2Tzg-KFEhKr", credibility: 4.8, followers: 1500000, following: 67, totalReviews: 245, verifiedReviews: 238 },
+        { id: 7, username: "hakan_guntulun", name: "Hakan Güntulun", email: "hakan@email.com", password: "123456", bio: "Lezzet Avcısı | İstanbul'un Gizli Mekanları 🍽️", avatar: "hakanprofile.jpg", credibility: 4.9, followers: 2100000, following: 89, totalReviews: 312, verifiedReviews: 305 },
+      ];
+
+      const MOCK_RESTAURANTS = [
+        { id: 1, name: "Antep Sofrası", category: "Türk Mutfağı", rating: 4.7, priceRange: "$$", address: "Kadıköy, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCYDO8qjTBZOGNn5CAFXZEXg4g884-rf7e0oS47YM5KU9QDOr725SZHbcDoFIwKRI8Zvg3Xvn3hFp24IjpO7daGkOgVZsbineoDqNBv49gjM3x2jX58p2QVT5E5tYod9On7lCJdl7ENSorh8hJhDInTYPy7h7HZnN-0A_OgOv88Mrg_5dImmz8atWhPa63ojDMdhV0oUBkoqD-poetnz199vYoVYPD9A_jzGi0lkmkIwOmVIfd5x3tyEE0XtiirNFtEbpgroOfYIymE", description: "Otantik Güneydoğu lezzetleri, el yapımı lahmacun ve kebaplar.", reviewCount: 324, influencerScore: 4.6 },
+        { id: 2, name: "Balıkçı Kemal", category: "Deniz Ürünleri", rating: 4.8, priceRange: "$$$", address: "Bebek, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1SApfHpNPFSauV-_MXgC1mLrZsR9us2Hw-zjp7WKc1MjDljEtAbrNneBi4ffcDKbLqJye-QQdDI3iSEsRu3BIp7jxFtZmteivlPhsA5emEIYs-shPCVKU3ZKsn8S_J5LK1Vkqbo1HyZp0SotzHA_-bBW8v7M4C6WK5ANJLzgEX0ZD_jkcF5nq_R9O82CupSAUNKHtQUJW8D5W5ptOoNV0tfdelSbSWB0-suEboDXJTdrLk-w1oXskDbj0zXfSSOvLTSWO4YdIjWF6", description: "Taze deniz ürünleri ve Boğaz manzarası eşliğinde enfes yemekler.", reviewCount: 512, influencerScore: 4.8 },
+        { id: 3, name: "Köfteci Ramiz", category: "Fast Food", rating: 4.5, priceRange: "$", address: "Beşiktaş, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDz3Plb-swAzr6xvFVezf2S9ArGz9xXgoPvniE-Yc16ciSzcwIIhTjaES7KG2PkLcr7rYrcFsf7BiZDbTaRZA-byag_JCyRfzy_LI8SuDHXJjCwZAv_OD-U5fxHbAb2psAwit6acq58jdDPvGHAfcLY7XfLwvLPF8akrEb2sohKy8xbSNH2BD805w3tiwR4DtMPcIZgffSkW6zeNqkhDjbZC95dwCK2eUb2GVm9diCTstuCKelqb6j51o-u-elqPeAOcbGj52fLkfDD", description: "Efsanevi köfteler ve piyaz. 50 yıllık gelenek.", reviewCount: 876, influencerScore: 4.4 },
+        { id: 4, name: "Mikla Restaurant", category: "Fine Dining", rating: 4.9, priceRange: "$$$$", address: "Beyoğlu, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDShNxnGEYexqNoOz0m6uVAaX4KdgR8uDLI8eYSMbBw4WFXyM99f_m8I5b1yZYzUlp3LEFc-SzmDkLKH8WFKEOh8BZTjL_G2mQuNsAA7znKJ2kBAs_kCH4Qge3ehhiAzU5xFVlFPcRlXvR5CjD7ESGfOliZH310W2C7KOa3KeQL4pITLMDzXL4uCB-W0LZy8rGv37VLeJtOTv3APbPCAzc6TNA89PeEh5Bq7RFOBee6MrQS-JDWYTpKzuVA9uTC5o7-i0BfwHBQbNqd", description: "Modern Anadolu mutfağı, şehir manzarası ve unutulmaz lezzetler.", reviewCount: 234, influencerScore: 4.9 },
+        { id: 5, name: "Çiya Sofrası", category: "Türk Mutfağı", rating: 4.7, priceRange: "$$", address: "Kadıköy, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCI9FEzWxct6uBnSbrT9ZHcPGcVLO8fhMCIVva0MIyCUYwSQzn6T3mRqP8lHxG0BDSJSKuYU1rfIimZtgvHdZF9c0cV6mSdE-VeOBErxj5ZDUfRT6NkJ3JwMZdqLRMQQPwqZabVtTmIgcNLRjIZGgREk1ERETxvDKUe6iSeNvIlr7uHj4E9f_0elQPuVM4syMhg1a4Xe46s3FN8R5XHpTwR4qiB74-R8FNbnmeDVaTgpFemWUVkxBb3K6UTgZLeg2MsMNBqKBm03gre", description: "Anadolu'nun dört bir yanından otantik tarifler.", reviewCount: 445, influencerScore: 4.7 },
+        { id: 6, name: "Nusr-Et Steakhouse", category: "Steakhouse", rating: 4.6, priceRange: "$$$$", address: "Etiler, İstanbul", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDT6tfc37xElp-TDJ86Y-SitUX51WI3UXz_CWUIOH2vh-3fb9vBwNg4nWdkQF-vn37KwHHOQ_Wr4VrH30VVQslUWQLPFafoWvlkVvw9ukyMqEPfBXGeQzaFbctQqGZDOOYndmvRV8Ec6Cj4e0TPKGuSQbC8UYo-H6rZ6F7iSqB00u6fkUWC0pWCNiSbaMBEUqxyIyzFd99P4LVxeHxuHxOeGd6LdtlbpmD4y23az6SaIP4x_Ko9qdL3do0O2usjOrFHOAFLHaaBqBQN", description: "Premium et kesimler ve dünyaca ünlü sunum.", reviewCount: 1203, influencerScore: 4.5 },
+        { id: 7, name: "Poyraz Çapari", category: "Balık Restoranı", rating: 4.8, priceRange: "$$", address: "Poyrazköy Sahil, İstanbul", image: "https://poyrazcapari.com/wp-content/uploads/2020/07/IMG-20181114-WA0009-e1594138507425.jpg", description: "Poyraz Çapari Poyrazköy Sahilde, müşterilerine en taze deniz ürünlerini, farklı lezzet konseptiyle buluşturmak için açılan balık restoran markasıdır.", reviewCount: 567, influencerScore: 4.9 },
+      ];
+
+      const INITIAL_POSTS = [
+        { id: 1, userId: 2, restaurantId: 1, content: "Antep Sofrası'nda muhteşem bir akşam yemeği yedim! Lahmacun el açması, kebaplar ise bir harika. Kesinlikle tavsiye ederim!", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCYDO8qjTBZOGNn5CAFXZEXg4g884-rf7e0oS47YM5KU9QDOr725SZHbcDoFIwKRI8Zvg3Xvn3hFp24IjpO7daGkOgVZsbineoDqNBv49gjM3x2jX58p2QVT5E5tYod9On7lCJdl7ENSorh8hJhDInTYPy7h7HZnN-0A_OgOv88Mrg_5dImmz8atWhPa63ojDMdhV0oUBkoqD-poetnz199vYoVYPD9A_jzGi0lkmkIwOmVIfd5x3tyEE0XtiirNFtEbpgroOfYIymE", likes: 234, comments: 56, shares: 12, createdAt: "1 gün" },
+        { id: 2, userId: 3, restaurantId: 2, content: "Balıkçı Kemal asla hayal kırıklığına uğratmıyor! Taptaze balıklar ve Boğaz manzarası eşliğinde harika bir deneyim.", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1SApfHpNPFSauV-_MXgC1mLrZsR9us2Hw-zjp7WKc1MjDljEtAbrNneBi4ffcDKbLqJye-QQdDI3iSEsRu3BIp7jxFtZmteivlPhsA5emEIYs-shPCVKU3ZKsn8S_J5LK1Vkqbo1HyZp0SotzHA_-bBW8v7M4C6WK5ANJLzgEX0ZD_jkcF5nq_R9O82CupSAUNKHtQUJW8D5W5ptOoNV0tfdelSbSWB0-suEboDXJTdrLk-w1oXskDbj0zXfSSOvLTSWO4YdIjWF6", likes: 189, comments: 42, shares: 8, createdAt: "2 gün" },
+        { id: 3, userId: 4, restaurantId: 3, content: "Köfteci Ramiz efsanesi devam ediyor! En lezzetli köfteler ve piyaz burada. Gerçek bir klasik!", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDz3Plb-swAzr6xvFVezf2S9ArGz9xXgoPvniE-Yc16ciSzcwIIhTjaES7KG2PkLcr7rYrcFsf7BiZDbTaRZA-byag_JCyRfzy_LI8SuDHXJjCwZAv_OD-U5fxHbAb2psAwit6acq58jdDPvGHAfcLY7XfLwvLPF8akrEb2sohKy8xbSNH2BD805w3tiwR4DtMPcIZgffSkW6zeNqkhDjbZC95dwCK2eUb2GVm9diCTstuCKelqb6j51o-u-elqPeAOcbGj52fLkfDD", likes: 312, comments: 78, shares: 25, createdAt: "3 gün" },
+        { id: 4, userId: 1, restaurantId: 4, content: "Mikla'da unutulmaz bir fine dining deneyimi yaşadım. Modern Anadolu mutfağının en güzel örneklerini tattık. Şehir manzarası ise cabası!", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDShNxnGEYexqNoOz0m6uVAaX4KdgR8uDLI8eYSMbBw4WFXyM99f_m8I5b1yZYzUlp3LEFc-SzmDkLKH8WFKEOh8BZTjL_G2mQuNsAA7znKJ2kBAs_kCH4Qge3ehhiAzU5xFVlFPcRlXvR5CjD7ESGfOliZH310W2C7KOa3KeQL4pITLMDzXL4uCB-W0LZy8rGv37VLeJtOTv3APbPCAzc6TNA89PeEh5Bq7RFOBee6MrQS-JDWYTpKzuVA9uTC5o7-i0BfwHBQbNqd", likes: 456, comments: 89, shares: 34, createdAt: "5 gün" },
+      ];
+
+      const INITIAL_REVIEWS = [
+        { id: 1, userId: 1, restaurantId: 4, rating: 5, content: "Mikla beklentilerimi aştı! Ambiyans zarif, servis kusursuz ve yemekler muhteşemdi. Tadım menüsünü kesinlikle tavsiye ederim.", likes: 12, dislikes: 2, createdAt: "2 hafta önce" },
+        { id: 2, userId: 2, restaurantId: 4, rating: 4, content: "Mikla'da harika bir deneyim yaşadım. Yemekler lezzetliydi ve personel çok ilgiliydi. Tek eksik ana yemeğin bekleme süresiydi.", likes: 8, dislikes: 1, createdAt: "1 ay önce" },
+        { id: 3, userId: 3, restaurantId: 1, rating: 5, content: "Antep Sofrası gerçek Güneydoğu lezzetlerini sunuyor. Lahmacun ve kebaplar mükemmeldi!", likes: 24, dislikes: 0, createdAt: "1 hafta önce" },
+        { id: 4, userId: 5, restaurantId: 2, rating: 5, content: "Balıkçı Kemal'de en taze balıkları yedik. Manzara ve servis de çok iyiydi.", likes: 18, dislikes: 1, createdAt: "3 gün önce" },
+      ];
+
+      // ==================== APP CONTEXT ====================
+      const AppContext = createContext();
+
+      const AppProvider = ({ children }) => {
+        const [currentUser, setCurrentUser] = useState(null);
+        const [posts, setPosts] = useState(INITIAL_POSTS);
+        const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+        const [likedPosts, setLikedPosts] = useState([]);
+        const [followingUsers, setFollowingUsers] = useState([]);
+        const [toast, setToast] = useState(null);
+
+        const showToast = useCallback((message, type = 'success') => {
+          setToast({ message, type });
+          setTimeout(() => setToast(null), 3000);
+        }, []);
+
+        const login = (email, password) => {
+          const user = MOCK_USERS.find(u => u.email === email && u.password === password);
+          if (user) {
+            setCurrentUser(user);
+            showToast(`Hoş geldin, ${user.name}!`);
+            return true;
+          }
+          showToast('Geçersiz e-posta veya şifre', 'error');
+          return false;
+        };
+
+        const signup = (name, email, password) => {
+          const exists = MOCK_USERS.find(u => u.email === email);
+          if (exists) {
+            showToast('Bu e-posta zaten kayıtlı', 'error');
+            return false;
+          }
+          const newUser = {
+            id: MOCK_USERS.length + 1,
+            username: name.toLowerCase().replace(' ', '_'),
+            name,
+            email,
+            password,
+            bio: "Yeni üye",
+            avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBfe4PS2W-uiHFdJqs6pF71GielAGaaV9DBpV0XF3ULPvelsDRqIA5imxUpNOqJNUMtoI0QVt54A-oH74XQuJKZcCg3vjAaUvwFdaRtr9G_PTmQIaqsiD8CziVdDE6oCH1T_HA0RUiVBBiFEJ7JDtv4NBQMz9joXjLJjLAg-Knfvy0pJUx-P0hJGJlCcM-F84szPqWai8vOyv36EN4T89rCqkL6nbXtOJ6ZdkRD2T9YOnaDuhdtGoWpCQVPrB0WtVc2rGuWthNnfDMK",
+            credibility: 0,
+            followers: 0,
+            following: 0
+          };
+          MOCK_USERS.push(newUser);
+          setCurrentUser(newUser);
+          showToast('Hesap oluşturuldu!');
+          return true;
+        };
+
+        const logout = () => {
+          setCurrentUser(null);
+          setLikedPosts([]);
+          setFollowingUsers([]);
+          showToast('Çıkış yapıldı');
+        };
+
+        const toggleLike = (postId) => {
+          if (likedPosts.includes(postId)) {
+            setLikedPosts(prev => prev.filter(id => id !== postId));
+            setPosts(prev => prev.map(p => p.id === postId ? {...p, likes: p.likes - 1} : p));
+          } else {
+            setLikedPosts(prev => [...prev, postId]);
+            setPosts(prev => prev.map(p => p.id === postId ? {...p, likes: p.likes + 1} : p));
+          }
+        };
+
+        const toggleFollow = (userId) => {
+          if (followingUsers.includes(userId)) {
+            setFollowingUsers(prev => prev.filter(id => id !== userId));
+            showToast('Takipten çıkıldı');
+          } else {
+            setFollowingUsers(prev => [...prev, userId]);
+            showToast('Takip edildi');
+          }
+        };
+
+        const [userScoreChanges, setUserScoreChanges] = useState({});
+
+        const addReview = (restaurantId, rating, content, influencerId = null) => {
+          if (!currentUser) return false;
+          const newReview = {
+            id: reviews.length + 1,
+            userId: currentUser.id,
+            restaurantId,
+            rating,
+            content,
+            influencerId,
+            likes: 0,
+            dislikes: 0,
+            createdAt: "Şimdi"
+          };
+          setReviews(prev => [newReview, ...prev]);
+
+          // If an influencer was selected, update their credibility
+          if (influencerId) {
+            updateInfluencerScore(influencerId, rating);
+          }
+
+          showToast('Yorum eklendi!');
+          return true;
+        };
+
+        const updateInfluencerScore = (influencerId, rating) => {
+          // Calculate score change based on rating
+          // 5 stars: +0.05, 4 stars: +0.02, 3 stars: 0, 2 stars: -0.02, 1 star: -0.05
+          let scoreChange = 0;
+          if (rating === 5) scoreChange = 0.05;
+          else if (rating === 4) scoreChange = 0.02;
+          else if (rating === 3) scoreChange = 0;
+          else if (rating === 2) scoreChange = -0.02;
+          else if (rating === 1) scoreChange = -0.05;
+
+          // Find and update the user
+          const userIndex = MOCK_USERS.findIndex(u => u.id === influencerId);
+          if (userIndex !== -1) {
+            const oldScore = MOCK_USERS[userIndex].credibility;
+            let newScore = oldScore + scoreChange;
+            // Keep score between 0 and 5
+            newScore = Math.max(0, Math.min(5, newScore));
+            newScore = Math.round(newScore * 100) / 100; // Round to 2 decimal places
+            MOCK_USERS[userIndex].credibility = newScore;
+            MOCK_USERS[userIndex].verifiedReviews = (MOCK_USERS[userIndex].verifiedReviews || 0) + 1;
+            MOCK_USERS[userIndex].totalReviews = (MOCK_USERS[userIndex].totalReviews || 0) + 1;
+
+            // Store the score change for animation
+            setUserScoreChanges(prev => ({
+              ...prev,
+              [influencerId]: { change: scoreChange, oldScore, newScore }
+            }));
+          }
+        };
+
+        const clearScoreChange = (userId) => {
+          setUserScoreChanges(prev => {
+            const newChanges = { ...prev };
+            delete newChanges[userId];
+            return newChanges;
+          });
+        };
+
+        const getUser = (id) => MOCK_USERS.find(u => u.id === id);
+        const getRestaurant = (id) => MOCK_RESTAURANTS.find(r => r.id === id);
+        const getRestaurantReviews = (id) => reviews.filter(r => r.restaurantId === id);
+
+        return (
+          <AppContext.Provider value={{
+            currentUser, login, signup, logout,
+            posts, likedPosts, toggleLike,
+            followingUsers, toggleFollow,
+            reviews, addReview, getRestaurantReviews,
+            getUser, getRestaurant,
+            users: MOCK_USERS, restaurants: MOCK_RESTAURANTS,
+            toast, showToast,
+            userScoreChanges, clearScoreChange
+          }}>
+            {children}
+            {toast && (
+              <div className={`toast fixed bottom-24 left-4 right-4 p-4 rounded-xl text-center font-medium z-50 ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white`}>
+                {toast.message}
+              </div>
+            )}
+          </AppContext.Provider>
+        );
+      };
+
+      const useApp = () => useContext(AppContext);
+
+      // ==================== ICONS ====================
+      const Icons = {
+        BackArrow: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg>,
+        X: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path></svg>,
+        House: ({ weight = "regular" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">{weight === "fill" ? <path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"></path> : <path d="M218.83,103.77l-80-75.48a1.14,1.14,0,0,1-.11-.11,16,16,0,0,0-21.53,0l-.11.11L37.17,103.77A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V160h32v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM208,208H160V160a16,16,0,0,0-16-16H112a16,16,0,0,0-16,16v48H48V115.55l.11-.1L128,40l79.9,75.43.11.1Z"></path>}</svg>,
+        MagnifyingGlass: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg>,
+        PlusSquare: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,176H48V48H208V208Zm-32-80a8,8,0,0,1-8,8H136v32a8,8,0,0,1-16,0V136H88a8,8,0,0,1,0-16h32V88a8,8,0,0,1,16,0v32h32A8,8,0,0,1,176,128Z"></path></svg>,
+        Bell: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path></svg>,
+        User: ({ weight = "regular" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">{weight === "fill" ? <path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"></path> : <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path>}</svg>,
+        Heart: ({ filled }) => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">{filled ? <path d="M240,94c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,220.66,16,164,16,94A62.07,62.07,0,0,1,78,32c20.65,0,38.73,8.88,50,23.89C139.27,40.88,157.35,32,178,32A62.07,62.07,0,0,1,240,94Z"></path> : <path d="M178,32c-20.65,0-38.73,8.88-50,23.89C116.73,40.88,98.65,32,78,32A62.07,62.07,0,0,0,16,94c0,70,103.79,126.66,108.21,129a8,8,0,0,0,7.58,0C136.21,220.66,240,164,240,94A62.07,62.07,0,0,0,178,32ZM128,206.8C109.74,196.16,32,147.69,32,94A46.06,46.06,0,0,1,78,48c19.45,0,35.78,10.36,42.6,27a8,8,0,0,0,14.8,0c6.82-16.67,23.15-27,42.6-27a46.06,46.06,0,0,1,46,46C224,147.61,146.24,196.15,128,206.8Z"></path>}</svg>,
+        Tray: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,16V152h-28.7A15.86,15.86,0,0,0,168,156.69L148.69,176H107.31L88,156.69A15.86,15.86,0,0,0,76.69,152H48V48Zm0,160H48V168H76.69L96,187.31A15.86,15.86,0,0,0,107.31,192h41.38A15.86,15.86,0,0,0,160,187.31L179.31,168H208v40Z"></path></svg>,
+        Chat: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128ZM84,116a12,12,0,1,0,12,12A12,12,0,0,0,84,116Zm88,0a12,12,0,1,0,12,12A12,12,0,0,0,172,116Zm60,12A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Zm-16,0A88,88,0,1,0,51.81,172.06a8,8,0,0,1,.66,6.54L40,216,77.4,203.53a7.85,7.85,0,0,1,2.53-.42,8,8,0,0,1,4,1.08A88,88,0,0,0,216,128Z"></path></svg>,
+        Send: () => <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M227.32,28.68a16,16,0,0,0-15.66-4.08l-.15,0L19.57,82.84a16,16,0,0,0-2.42,29.84l85.62,40.55,40.55,85.62A15.86,15.86,0,0,0,157.74,248q.69,0,1.38-.06a15.88,15.88,0,0,0,14-11.51l58.2-191.94c0-.05,0-.1,0-.15A16,16,0,0,0,227.32,28.68ZM157.83,231.85l-.05.14L118.42,148.9l47.24-47.25a8,8,0,0,0-11.31-11.31L107.1,137.58,24,98.22l.14,0L216,40Z"></path></svg>,
+        Star: ({ filled }) => <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">{filled ? <path d="M234.5,114.38l-45.1,39.36,13.51,58.6a16,16,0,0,1-23.84,17.34l-51.11-31-51,31a16,16,0,0,1-23.84-17.34L66.61,153.8,21.5,114.38a16,16,0,0,1,9.11-28.06l59.46-5.15,23.21-55.36a15.95,15.95,0,0,1,29.44,0h0L166,81.17l59.44,5.15a16,16,0,0,1,9.11,28.06Z"></path> : <path d="M239.2,97.29a16,16,0,0,0-13.81-11L166,81.17,142.72,25.81h0a15.95,15.95,0,0,0-29.44,0L90.07,81.17,30.61,86.32a16,16,0,0,0-9.11,28.06L66.61,153.8,53.09,212.34a16,16,0,0,0,23.84,17.34l51-31,51.11,31a16,16,0,0,0,23.84-17.34l-13.51-58.6,45.1-39.36A16,16,0,0,0,239.2,97.29Zm-15.22,5-45.1,39.36a16,16,0,0,0-5.08,15.71L187.35,216v0l-51.07-31a15.9,15.9,0,0,0-16.54,0l-51,31h0L82.2,157.4a16,16,0,0,0-5.08-15.71L32,102.35a.37.37,0,0,1,0-.09l59.44-5.14a16,16,0,0,0,13.35-9.75L128,32.08l23.2,55.29a16,16,0,0,0,13.35,9.75L224,102.26S224,102.32,224,102.33Z"></path>}</svg>
+      };
+
+      // ==================== COMPONENTS ====================
+      const BottomNav = ({ active }) => {
+        const { currentUser } = useApp();
+        return (
+          <div className="flex gap-2 border-t border-[#392f28] bg-[#27201c] px-4 pb-3 pt-2">
+            {[
+              { id: 'feed', icon: Icons.House, label: 'Feed', to: '/feed' },
+              { id: 'search', icon: Icons.MagnifyingGlass, label: 'Ara', to: '/search' },
+              { id: 'post', icon: Icons.PlusSquare, label: 'Paylaş', to: '/write-review/1' },
+              { id: 'notifications', icon: Icons.Bell, label: 'Bildirim', to: '/feed' },
+              { id: 'profile', icon: Icons.User, label: 'Profil', to: currentUser ? `/profile/${currentUser.id}` : '/login' },
+            ].map((item) => (
+              <Link key={item.id} to={item.to} className={`flex flex-1 flex-col items-center justify-end gap-1 ${active === item.id ? 'text-white' : 'text-[#b9a89d]'}`}>
+                <div className={`${active === item.id ? 'text-white' : 'text-[#b9a89d]'} flex h-8 items-center justify-center`}>
+                  <item.icon weight={active === item.id ? 'fill' : 'regular'} />
+                </div>
+                <p className="text-xs font-medium leading-normal tracking-[0.015em]">{item.label}</p>
+              </Link>
+            ))}
+          </div>
+        );
+      };
+
+      const PostCard = ({ post }) => {
+        const { getUser, getRestaurant, likedPosts, toggleLike } = useApp();
+        const user = getUser(post.userId);
+        const restaurant = getRestaurant(post.restaurantId);
+        const isLiked = likedPosts.includes(post.id);
+        const navigate = useNavigate();
+
+        return (
+          <div className="mb-4">
+            <div className="p-4 @container">
+              <div className="flex flex-col items-stretch justify-start rounded-lg @xl:flex-row @xl:items-start cursor-pointer" onClick={() => navigate(`/restaurant/${post.restaurantId}`)}>
+                <div className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg" style={{backgroundImage: `url("${post.image}")`}}></div>
+                <div className="flex w-full min-w-72 grow flex-col items-stretch justify-center gap-1 py-4 @xl:px-4">
+                  <p className="text-white text-lg font-bold leading-tight tracking-[-0.015em]">{restaurant?.name}</p>
+                  <div className="flex items-end gap-3 justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[#b9a89d] text-base font-normal leading-normal">By @{user?.username}</p>
+                      <p className="text-[#b9a89d] text-base font-normal leading-normal">{post.createdAt}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 px-4 py-2 justify-between">
+              <button onClick={() => toggleLike(post.id)} className={`flex items-center justify-center gap-2 px-3 py-2 ${isLiked ? 'text-red-500' : 'text-[#b9a89d]'}`}>
+                <Icons.Heart filled={isLiked} />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.likes}</p>
+              </button>
+              <div className="flex items-center justify-center gap-2 px-3 py-2 text-[#b9a89d]">
+                <Icons.Chat />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.comments}</p>
+              </div>
+              <div className="flex items-center justify-center gap-2 px-3 py-2 text-[#b9a89d]">
+                <Icons.Send />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.shares}</p>
+              </div>
+            </div>
+            <p className="text-white text-base font-normal leading-normal pb-3 pt-1 px-4">{post.content}</p>
+          </div>
+        );
+      };
+
+      const StarRating = ({ rating, onRate, interactive = false }) => (
+        <div className="flex gap-0.5">
+          {[1,2,3,4,5].map(star => (
+            <button key={star} onClick={() => interactive && onRate?.(star)} className={`${interactive ? 'cursor-pointer' : ''} ${star <= rating ? 'text-white' : 'text-[#54453b]'}`}>
+              <Icons.Star filled={star <= rating} />
+            </button>
+          ))}
+        </div>
+      );
+
+      // ==================== PAGES ====================
+      const LandingPage = () => {
+        const navigate = useNavigate();
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] justify-between overflow-x-hidden">
+            <div>
+              <div className="@container">
+                <div className="@[480px]:px-4 @[480px]:py-3">
+                  <div className="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden bg-[#181411] @[480px]:rounded-lg min-h-80" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAgLQVdg_vlyzBfuh2bUnPgyBQ_ryrqcSY7poPUApDI8Q6HxExlCvtOOGobJiWXLySR6kqkafTSzdBs93ZJiBmQJVPl4LNXJS6bLmlbBvZB3uwSD47objTN9N1mt4mK9UdP_VA3n-sxH9fzh6aL4ZsT-4mWUGDmDpvOZqVFYBmTK4jy9gyO58-J75vcL0FlvQ-k7nTrrIJM9Ll0Ii45fziloGbi7K3VqCfBE1bR40TYodCPd6cl3QX_cgnYNnSEw14DAlR1TU7LkrEp")' }}></div>
+                </div>
+              </div>
+              <h2 className="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">Güvenilir önerilerle en iyi mekanları keşfet</h2>
+              <p className="text-white text-base font-normal leading-normal pb-3 pt-1 px-4 text-center">Güvendiğiniz influencer'ların önerdiği restoranları ve deneyimleri bulun.</p>
+              <div className="flex justify-center">
+                <div className="flex flex-1 gap-3 max-w-[480px] flex-col items-stretch px-4 py-3">
+                  <button onClick={() => navigate('/signup')} className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#ec6d13] text-white text-base font-bold leading-normal tracking-[0.015em] w-full">Kayıt Ol</button>
+                  <button onClick={() => navigate('/login')} className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#392f28] text-white text-base font-bold leading-normal tracking-[0.015em] w-full">Giriş Yap</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-[#b9a89d] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center">Devam ederek Kullanım Şartları ve Gizlilik Politikasını kabul etmiş olursunuz</p>
+              <div className="h-5 bg-[#181411]"></div>
+            </div>
+          </div>
+        );
+      };
+
+      const LoginPage = () => {
+        const navigate = useNavigate();
+        const { login } = useApp();
+        const [email, setEmail] = useState('ayse@email.com');
+        const [password, setPassword] = useState('123456');
+
+        const handleLogin = (e) => {
+          e.preventDefault();
+          if (login(email, password)) {
+            navigate('/feed');
+          }
+        };
+
+        return (
+          <div className="bg-[#181411] min-h-screen flex flex-col items-center justify-center p-4 font-display text-white">
+            <div className="w-full max-w-[480px] flex flex-col gap-6">
+              <div className="flex flex-col items-center justify-center pt-8 pb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-orange-400 flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
+                  <span className="material-symbols-outlined text-white text-4xl">graphic_eq</span>
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight text-center">Tekrar Hoş Geldin</h1>
+                <p className="text-[#b9a89d] text-center mt-2 text-base">Influencer'lar ve mekanlarla bağlantı kur.</p>
+              </div>
+              <form className="flex flex-col gap-4 w-full" onSubmit={handleLogin}>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} className="form-input flex w-full rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-surface-input placeholder:text-[#b9a89d] h-14 px-4 text-base" placeholder="E-posta" type="email" />
+                <input value={password} onChange={(e) => setPassword(e.target.value)} className="form-input flex w-full rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-surface-input placeholder:text-[#b9a89d] h-14 px-4 text-base" placeholder="Şifre" type="password" />
+                <div className="flex justify-end w-full">
+                  <Link to="/forgot-password" className="text-primary text-sm font-medium hover:underline">Şifremi Unuttum?</Link>
+                </div>
+                <button type="submit" className="h-14 bg-primary hover:bg-orange-600 text-white text-base font-bold rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-[0.98]">Giriş Yap</button>
+              </form>
+              <p className="text-[#b9a89d] text-sm text-center mt-4">Demo: ayse@email.com / 123456</p>
+              <div className="text-center pb-8">
+                <p className="text-[#b9a89d] text-sm">Hesabın yok mu? <Link to="/signup" className="text-primary font-bold hover:underline ml-1">Kayıt Ol</Link></p>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const SignUpPage = () => {
+        const navigate = useNavigate();
+        const { signup } = useApp();
+        const [name, setName] = useState('');
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (signup(name, email, password)) {
+            navigate('/feed');
+          }
+        };
+
+        return (
+          <div className="relative flex h-full min-h-screen w-full flex-col bg-[#181411] overflow-x-hidden max-w-md mx-auto">
+            <div className="flex items-center p-4 pb-2">
+              <button onClick={() => navigate(-1)} className="text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-white/10"><Icons.BackArrow /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pb-8">
+              <div className="flex flex-col items-center pt-2 pb-6">
+                <div className="mb-4 size-16 flex items-center justify-center rounded-2xl bg-primary/20 text-primary">
+                  <span className="material-symbols-outlined" style={{fontSize: "32px"}}>restaurant_menu</span>
+                </div>
+                <h1 className="text-white text-[32px] font-extrabold text-center">Lezzet Kaşiflerine Katıl</h1>
+                <p className="text-neutral-400 text-base pt-2 text-center max-w-[280px]">En iyi mekanları keşfet, influencer'larla bağlan.</p>
+              </div>
+              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+                <input value={name} onChange={(e) => setName(e.target.value)} className="h-12 w-full rounded-xl border border-neutral-800 bg-[#1E1E1E] px-4 text-white placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ad Soyad" type="text" required />
+                <input value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 w-full rounded-xl border border-neutral-800 bg-[#1E1E1E] px-4 text-white placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="E-posta" type="email" required />
+                <input value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 w-full rounded-xl border border-neutral-800 bg-[#1E1E1E] px-4 text-white placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Şifre" type="password" required />
+                <button type="submit" className="mt-4 flex w-full items-center justify-center rounded-xl h-12 bg-primary text-white text-base font-bold shadow-lg shadow-primary/20">Hesap Oluştur</button>
+              </form>
+              <div className="mt-8 text-center">
+                <p className="text-sm text-neutral-400">Zaten hesabın var mı? <Link to="/login" className="font-bold text-primary">Giriş Yap</Link></p>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // New Post Animation Component
+      const NewPostCard = ({ post, onAnimationEnd, animated = true }) => {
+        const { getUser, getRestaurant, likedPosts, toggleLike } = useApp();
+        const user = getUser(post.userId);
+        const restaurant = getRestaurant(post.restaurantId);
+        const isLiked = likedPosts.includes(post.id);
+        const navigate = useNavigate();
+
+        return (
+          <div className={`${animated ? 'new-post-animation' : ''} overflow-hidden`} onAnimationEnd={onAnimationEnd}>
+            {/* New Post Badge */}
+            <div className="flex items-center justify-center py-2">
+              <div className="bg-primary/20 border border-primary px-4 py-1.5 rounded-full flex items-center gap-2 pulse-glow">
+                <span className="material-symbols-outlined text-primary text-sm">notifications_active</span>
+                <span className="text-primary text-sm font-bold">Yeni Öneri!</span>
+              </div>
+            </div>
+            {/* Influencer Info */}
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div className="relative">
+                <div className="w-12 h-12 bg-cover bg-center rounded-full ring-2 ring-primary" style={{backgroundImage: `url("${user?.avatar}")`}}></div>
+                <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5">
+                  <Icons.Star filled={true} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-bold">{user?.name}</p>
+                  <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{user?.credibility} Puan</span>
+                </div>
+                <p className="text-[#b9a89d] text-sm">@{user?.username} · Şimdi</p>
+              </div>
+            </div>
+            {/* Post Content */}
+            <div className="p-4 pt-0 @container">
+              <div className="flex flex-col items-stretch justify-start rounded-xl overflow-hidden bg-[#27201c] cursor-pointer" onClick={() => navigate(`/restaurant/${post.restaurantId}`)}>
+                <div className="w-full bg-center bg-no-repeat aspect-video bg-cover" style={{backgroundImage: `url("${post.image}")`}}></div>
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-white text-lg font-bold">{restaurant?.name}</p>
+                    <div className="flex items-center gap-1 bg-primary px-2 py-1 rounded-lg">
+                      <Icons.Star filled={true} />
+                      <span className="text-white text-sm font-bold">{restaurant?.influencerScore}</span>
+                    </div>
+                  </div>
+                  <p className="text-[#b9a89d] text-sm">{restaurant?.category} · {restaurant?.address}</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-white text-base font-normal leading-normal pb-3 pt-1 px-4">{post.content}</p>
+            <div className="flex flex-wrap gap-4 px-4 py-2 justify-between border-b border-[#392f28]">
+              <button onClick={() => toggleLike(post.id)} className={`flex items-center justify-center gap-2 px-3 py-2 ${isLiked ? 'text-red-500' : 'text-[#b9a89d]'}`}>
+                <Icons.Heart filled={isLiked} />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.likes}</p>
+              </button>
+              <div className="flex items-center justify-center gap-2 px-3 py-2 text-[#b9a89d]">
+                <Icons.Chat />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.comments}</p>
+              </div>
+              <div className="flex items-center justify-center gap-2 px-3 py-2 text-[#b9a89d]">
+                <Icons.Send />
+                <p className="text-[13px] font-bold leading-normal tracking-[0.015em]">{post.shares}</p>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const FeedPage = () => {
+        const { posts, users, currentUser, logout } = useApp();
+        const navigate = useNavigate();
+        const [showNewPost, setShowNewPost] = useState(false);
+        const [showLoading, setShowLoading] = useState(true);
+        const [animationDone, setAnimationDone] = useState(false);
+
+        // New post from Hakan Güntulun about Poyraz Çapari
+        const newPost = {
+          id: 999,
+          userId: 7, // Hakan Güntulun
+          restaurantId: 7, // Poyraz Çapari
+          content: "Arkadaşlar bu mekanı keşfettim ve inanılmaz! Poyraz Çapari'nin kuymağı ve hamsisi efsane. Karadeniz mutfağını özleyenler için birebir. Kesinlikle gidin, pişman olmayacaksınız! 🐟🧀",
+          image: "https://poyrazcapari.com/wp-content/uploads/2020/07/IMG-20181114-WA0009-e1594138507425.jpg",
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          createdAt: "Şimdi"
+        };
+
+        useEffect(() => {
+          if (!currentUser) navigate('/login');
+        }, [currentUser, navigate]);
+
+        useEffect(() => {
+          // Show loading shimmer for 1.5 seconds, then show new post
+          const loadingTimer = setTimeout(() => {
+            setShowLoading(false);
+            setShowNewPost(true);
+          }, 1500);
+
+          return () => clearTimeout(loadingTimer);
+        }, []);
+
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] justify-between overflow-x-hidden">
+            <div>
+              <div className="flex items-center bg-[#181411] p-4 pb-2 justify-between">
+                <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Feed</h2>
+                <button onClick={logout} className="flex items-center justify-center h-12 text-[#b9a89d] hover:text-white">
+                  <span className="material-symbols-outlined">logout</span>
+                </button>
+              </div>
+              {/* Stories */}
+              <div className="flex w-full overflow-hidden px-4 py-3">
+                <div className="flex min-h-min flex-row items-start justify-start gap-5 overflow-x-auto no-scrollbar">
+                  {users.slice(0, 7).map((user) => (
+                    <Link key={user.id} to={`/profile/${user.id}`} className="flex flex-1 flex-col justify-center gap-2 w-16 text-center shrink-0">
+                      <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full ring-2 ring-primary ring-offset-2 ring-offset-[#181411]" style={{backgroundImage: `url("${user.avatar}")`}}></div>
+                      <p className="text-white text-[13px] font-normal leading-normal">{user.name.split(' ')[0]}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loading Shimmer */}
+              {showLoading && (
+                <div className="px-4 py-2">
+                  <div className="shimmer rounded-xl h-64 mb-4"></div>
+                </div>
+              )}
+
+              {/* Animated New Post */}
+              {showNewPost && (
+                <NewPostCard
+                  post={newPost}
+                  onAnimationEnd={() => setAnimationDone(true)}
+                  animated={!animationDone}
+                />
+              )}
+
+              {/* Regular Posts */}
+              {posts.map(post => <PostCard key={post.id} post={post} />)}
+              <div className="h-20"></div>
+            </div>
+            <div className="fixed bottom-0 w-full z-20">
+              <BottomNav active="feed" />
+            </div>
+          </div>
+        );
+      };
+
+      const SearchPage = () => {
+        const { restaurants } = useApp();
+        const navigate = useNavigate();
+        const [search, setSearch] = useState('');
+
+        const filtered = restaurants.filter(r =>
+          r.name.toLowerCase().includes(search.toLowerCase()) ||
+          r.category.toLowerCase().includes(search.toLowerCase())
+        );
+
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] overflow-x-hidden">
+            <div className="p-4">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b9a89d]"><Icons.MagnifyingGlass /></span>
+                <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-12 rounded-xl bg-[#392f28] text-white pl-12 pr-4 placeholder:text-[#b9a89d] focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Restoran veya kategori ara..." />
+              </div>
+            </div>
+            <div className="px-4 pb-24">
+              <h3 className="text-white text-lg font-bold mb-4">Restoranlar</h3>
+              {filtered.map(restaurant => (
+                <div key={restaurant.id} onClick={() => navigate(`/restaurant/${restaurant.id}`)} className="flex gap-4 mb-4 p-3 rounded-xl bg-[#27201c] cursor-pointer hover:bg-[#392f28] transition-colors">
+                  <div className="w-20 h-20 bg-cover bg-center rounded-lg flex-shrink-0" style={{backgroundImage: `url("${restaurant.image}")`}}></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold truncate">{restaurant.name}</p>
+                    <p className="text-[#b9a89d] text-sm">{restaurant.category} · {restaurant.priceRange}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-1">
+                        <Icons.Star filled={true} />
+                        <span className="text-white text-sm font-medium">{restaurant.rating}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-primary">
+                        <span className="text-xs">Influencer:</span>
+                        <span className="text-sm font-medium">{restaurant.influencerScore}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="fixed bottom-0 w-full z-20">
+              <BottomNav active="search" />
+            </div>
+          </div>
+        );
+      };
+
+      const RestaurantPage = () => {
+        const { id } = useParams();
+        const navigate = useNavigate();
+        const { getRestaurant, getRestaurantReviews, getUser, users } = useApp();
+        const restaurant = getRestaurant(parseInt(id));
+        const reviews = getRestaurantReviews(parseInt(id));
+
+        if (!restaurant) return <div className="bg-[#181411] min-h-screen flex items-center justify-center text-white">Restoran bulunamadı</div>;
+
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] overflow-x-hidden">
+            <div>
+              <div className="flex items-center bg-[#181411] p-4 pb-2 justify-between">
+                <button onClick={() => navigate(-1)} className="text-white flex size-12 shrink-0 items-center"><Icons.BackArrow /></button>
+                <h2 className="text-white text-lg font-bold flex-1 text-center pr-12">{restaurant.name}</h2>
+              </div>
+              <div className="flex p-4 @container">
+                <div className="flex w-full flex-col gap-4 items-center">
+                  <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl min-h-36 w-36" style={{backgroundImage: `url("${restaurant.image}")`}}></div>
+                  <div className="flex flex-col items-center">
+                    <p className="text-white text-[22px] font-bold text-center">{restaurant.name}</p>
+                    <p className="text-[#b9a89d] text-base text-center">{restaurant.category} · {restaurant.priceRange}</p>
+                    <p className="text-[#b9a89d] text-base text-center">{restaurant.address}</p>
+                  </div>
+                  {/* Rating Cards */}
+                  <div className="flex gap-4 w-full mt-2">
+                    <div className="flex-1 bg-[#27201c] rounded-xl p-4 text-center">
+                      <p className="text-[#b9a89d] text-sm mb-1">Kullanıcı Puanı</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-white text-2xl font-bold">{restaurant.rating}</span>
+                        <Icons.Star filled={true} />
+                      </div>
+                      <p className="text-[#b9a89d] text-xs mt-1">{restaurant.reviewCount} yorum</p>
+                    </div>
+                    <div className="flex-1 bg-primary/20 border border-primary rounded-xl p-4 text-center">
+                      <p className="text-primary text-sm mb-1">Influencer Puanı</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-white text-2xl font-bold">{restaurant.influencerScore}</span>
+                        <Icons.Star filled={true} />
+                      </div>
+                      <p className="text-[#b9a89d] text-xs mt-1">Güvenilir öneriler</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-4 pb-2">
+                <h3 className="text-white text-lg font-bold mb-2">Hakkında</h3>
+                <p className="text-white">{restaurant.description}</p>
+              </div>
+              <div className="px-4 py-4">
+                <h3 className="text-white text-lg font-bold mb-3">Öneren Influencer'lar</h3>
+                <div className="flex gap-4 overflow-x-auto no-scrollbar">
+                  {users.slice(0, 4).map(user => (
+                    <Link key={user.id} to={`/profile/${user.id}`} className="flex flex-col items-center min-w-[90px] bg-[#27201c] rounded-xl p-3">
+                      <div className="relative">
+                        <div className="w-14 h-14 bg-cover bg-center rounded-full ring-2 ring-primary" style={{backgroundImage: `url("${user.avatar}")`}}></div>
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Icons.Star filled={true} />
+                          <span className="text-white text-xs font-bold">{user.credibility}</span>
+                        </div>
+                      </div>
+                      <p className="text-white text-xs mt-3 text-center truncate w-full">{user.name.split(' ')[0]}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="px-4 py-4">
+                <h3 className="text-white text-lg font-bold mb-3">Yorumlar ({reviews.length})</h3>
+                {reviews.map(review => {
+                  const user = getUser(review.userId);
+                  return (
+                    <div key={review.id} className="bg-[#27201c] rounded-xl p-4 mb-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-cover bg-center rounded-full" style={{backgroundImage: `url("${user?.avatar}")`}}></div>
+                        <div>
+                          <p className="text-white font-medium">{user?.name}</p>
+                          <p className="text-[#b9a89d] text-sm">{review.createdAt}</p>
+                        </div>
+                      </div>
+                      <StarRating rating={review.rating} />
+                      <p className="text-white mt-2">{review.content}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-3 px-4 py-3">
+                <button className="flex-1 h-10 bg-[#ec6d13] text-white font-bold rounded-lg">Ziyaret Et</button>
+                <button onClick={() => navigate(`/write-review/${id}`)} className="flex-1 h-10 bg-[#392f28] text-white font-bold rounded-lg">Yorum Yaz</button>
+              </div>
+              <div className="h-20"></div>
+            </div>
+            <div className="fixed bottom-0 w-full z-20">
+              <BottomNav active="search" />
+            </div>
+          </div>
+        );
+      };
+
+      // Influencer Selection Modal
+      const InfluencerSelectModal = ({ isOpen, onClose, onSelect, users, rating }) => {
+        const [selectedInfluencer, setSelectedInfluencer] = useState(null);
+        const [showResult, setShowResult] = useState(false);
+        const [scoreChange, setScoreChange] = useState(null);
+
+        if (!isOpen) return null;
+
+        const handleSelect = (userId) => {
+          setSelectedInfluencer(userId);
+        };
+
+        const handleConfirm = () => {
+          if (selectedInfluencer) {
+            // Calculate what the score change will be
+            let change = 0;
+            if (rating === 5) change = 0.05;
+            else if (rating === 4) change = 0.02;
+            else if (rating === 3) change = 0;
+            else if (rating === 2) change = -0.02;
+            else if (rating === 1) change = -0.05;
+
+            setScoreChange(change);
+            setShowResult(true);
+
+            // After animation, complete the action
+            setTimeout(() => {
+              onSelect(selectedInfluencer);
+            }, 2500);
+          }
+        };
+
+        const handleSkip = () => {
+          onSelect(null);
+        };
+
+        const selectedUser = users.find(u => u.id === selectedInfluencer);
+
+        return (
+          <div className="modal-overlay fixed inset-0 bg-black/80 z-50 flex items-end justify-center">
+            <div className="modal-content bg-[#27201c] w-full max-w-lg rounded-t-3xl max-h-[85vh] overflow-hidden">
+              {!showResult ? (
+                <>
+                  <div className="p-6 border-b border-[#392f28]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-white text-xl font-bold">Kimin Tavsiyesiyle Geldiniz?</h3>
+                      <button onClick={handleSkip} className="text-[#b9a89d] text-sm">Atla</button>
+                    </div>
+                    <p className="text-[#b9a89d] text-sm">Bu restoranı size öneren influencer'ı seçin. Verdiğiniz puan onun güvenilirlik skorunu etkileyecek.</p>
+                  </div>
+                  <div className="p-4 max-h-[50vh] overflow-y-auto">
+                    {users.filter(u => u.id !== 1).map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => handleSelect(user.id)}
+                        className={`w-full flex items-center gap-4 p-3 rounded-xl mb-2 transition-all ${selectedInfluencer === user.id ? 'bg-primary/20 border-2 border-primary' : 'bg-[#392f28] border-2 border-transparent'}`}
+                      >
+                        <div className="relative">
+                          <div className="w-14 h-14 bg-cover bg-center rounded-full" style={{backgroundImage: `url("${user.avatar}")`}}></div>
+                          <div className="absolute -bottom-1 -right-1 bg-primary px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <span className="text-white text-xs font-bold">{user.credibility}</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-white font-bold">{user.name}</p>
+                          <p className="text-[#b9a89d] text-sm">@{user.username}</p>
+                        </div>
+                        {selectedInfluencer === user.id && (
+                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-sm">check</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="p-4 border-t border-[#392f28]">
+                    <button
+                      onClick={handleConfirm}
+                      disabled={!selectedInfluencer}
+                      className={`w-full h-14 rounded-xl font-bold ${selectedInfluencer ? 'bg-primary text-white' : 'bg-[#392f28] text-[#b9a89d]'}`}
+                    >
+                      Onayla ve Gönder
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
+                  <div className="relative mb-6">
+                    <div className="w-24 h-24 bg-cover bg-center rounded-full ring-4 ring-primary" style={{backgroundImage: `url("${selectedUser?.avatar}")`}}></div>
+                    <div className={`absolute -top-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center ${scoreChange >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
+                      <span className="material-symbols-outlined text-white">{scoreChange >= 0 ? 'trending_up' : 'trending_down'}</span>
+                    </div>
+                  </div>
+                  <h3 className="text-white text-xl font-bold mb-2">{selectedUser?.name}</h3>
+                  <p className="text-[#b9a89d] mb-6">@{selectedUser?.username}</p>
+
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-center">
+                      <p className="text-[#b9a89d] text-sm mb-1">Eski Puan</p>
+                      <p className="text-white text-2xl font-bold">{(selectedUser?.credibility - scoreChange).toFixed(2)}</p>
+                    </div>
+                    <div className="text-3xl">→</div>
+                    <div className="text-center">
+                      <p className="text-[#b9a89d] text-sm mb-1">Yeni Puan</p>
+                      <p className={`text-2xl font-bold ${scoreChange >= 0 ? 'score-up text-green-500' : 'score-down text-red-500'}`}>
+                        {selectedUser?.credibility.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`float-up text-2xl font-bold ${scoreChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {scoreChange >= 0 ? '+' : ''}{scoreChange.toFixed(2)}
+                  </div>
+
+                  <p className={`text-center mt-4 ${scoreChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {scoreChange > 0 && 'Tavsiyesi doğrulandı! Güvenilirliği arttı.'}
+                    {scoreChange < 0 && 'Tavsiyesi tutmadı. Güvenilirliği düştü.'}
+                    {scoreChange === 0 && 'Puanınız nötr olduğu için etkilenmedi.'}
+                  </p>
+
+                  <div className="mt-6 flex items-center gap-2 text-[#b9a89d]">
+                    <div className="w-5 h-5 border-2 border-[#b9a89d] border-t-transparent rounded-full animate-spin"></div>
+                    <span>Yönlendiriliyorsunuz...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      const WriteReviewPage = () => {
+        const { id } = useParams();
+        const navigate = useNavigate();
+        const { getRestaurant, addReview, currentUser, users } = useApp();
+        const restaurant = getRestaurant(parseInt(id));
+        const [rating, setRating] = useState(0);
+        const [content, setContent] = useState('');
+        const [showInfluencerModal, setShowInfluencerModal] = useState(false);
+
+        useEffect(() => {
+          if (!currentUser) navigate('/login');
+        }, [currentUser, navigate]);
+
+        const handleSubmit = () => {
+          if (rating === 0) return;
+          setShowInfluencerModal(true);
+        };
+
+        const handleInfluencerSelect = (influencerId) => {
+          addReview(parseInt(id), rating, content, influencerId);
+          setShowInfluencerModal(false);
+          navigate(`/restaurant/${id}`);
+        };
+
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] justify-between overflow-x-hidden">
+            <div>
+              <div className="flex items-center bg-[#181411] p-4 pb-2 justify-between">
+                <button onClick={() => navigate(-1)} className="text-white flex size-12 shrink-0 items-center"><Icons.X /></button>
+                <h2 className="text-white text-lg font-bold flex-1 text-center pr-12">Yorum Yaz</h2>
+              </div>
+              <h3 className="text-white text-lg font-bold px-4 pb-2 pt-4">{restaurant?.name} hakkında deneyimin nasıldı?</h3>
+              <div className="px-4 py-4">
+                <p className="text-[#b9a89d] mb-2">Puanla</p>
+                <div className="flex gap-2">
+                  {[1,2,3,4,5].map(star => (
+                    <button key={star} onClick={() => setRating(star)} className={`w-12 h-12 rounded-lg border ${rating >= star ? 'bg-primary border-primary' : 'border-[#54453b]'} flex items-center justify-center`}>
+                      <Icons.Star filled={rating >= star} />
+                    </button>
+                  ))}
+                </div>
+                {rating > 0 && (
+                  <p className="text-[#b9a89d] text-sm mt-2">
+                    {rating === 5 && '⭐ Mükemmel! Bu tavsiyeyi yapan influencer puan kazanacak.'}
+                    {rating === 4 && '👍 Güzel! Bu tavsiyeyi yapan influencer puan kazanacak.'}
+                    {rating === 3 && '😐 Fena değil. Influencer puanı etkilenmeyecek.'}
+                    {rating === 2 && '👎 Beklentileri karşılamadı. Influencer puan kaybedecek.'}
+                    {rating === 1 && '❌ Çok kötü! Influencer ciddi puan kaybedecek.'}
+                  </p>
+                )}
+              </div>
+              <div className="px-4 py-3">
+                <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Düşüncelerini paylaş..." className="w-full min-h-36 rounded-lg bg-[#392f28] text-white p-4 placeholder:text-[#b9a89d] focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+              </div>
+            </div>
+            <div className="p-4">
+              <button onClick={handleSubmit} disabled={rating === 0} className={`w-full h-12 rounded-lg font-bold ${rating > 0 ? 'bg-[#ec6d13] text-white' : 'bg-[#392f28] text-[#b9a89d]'}`}>Devam Et</button>
+              <div className="h-5"></div>
+            </div>
+
+            <InfluencerSelectModal
+              isOpen={showInfluencerModal}
+              onClose={() => setShowInfluencerModal(false)}
+              onSelect={handleInfluencerSelect}
+              users={users}
+              rating={rating}
+            />
+          </div>
+        );
+      };
+
+      const ProfilePage = () => {
+        const { id } = useParams();
+        const navigate = useNavigate();
+        const { getUser, currentUser, followingUsers, toggleFollow, posts } = useApp();
+        const user = getUser(parseInt(id));
+        const isOwnProfile = currentUser?.id === parseInt(id);
+        const isFollowing = followingUsers.includes(parseInt(id));
+        const userPosts = posts.filter(p => p.userId === parseInt(id));
+
+        if (!user) return <div className="bg-[#181411] min-h-screen flex items-center justify-center text-white">Kullanıcı bulunamadı</div>;
+
+        const formatFollowers = (num) => {
+          if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+          if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+          return num;
+        };
+
+        return (
+          <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#181411] overflow-x-hidden">
+            <div>
+              <div className="flex items-center bg-[#181411] p-4 pb-2 justify-between">
+                <button onClick={() => navigate(-1)} className="text-white flex size-12 shrink-0 items-center"><Icons.BackArrow /></button>
+                <h2 className="text-white text-lg font-bold flex-1 text-center pr-12">{user.name}</h2>
+              </div>
+              <div className="flex p-4 @container">
+                <div className="flex w-full flex-col gap-4 items-center">
+                  <div className="relative">
+                    <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full min-h-32 w-32 ring-4 ring-primary" style={{backgroundImage: `url("${user.avatar}")`}}></div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full flex items-center gap-1">
+                      <Icons.Star filled={true} />
+                      <span className="text-white text-sm font-bold">{user.credibility}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center mt-2">
+                    <p className="text-white text-[22px] font-bold text-center">{user.name}</p>
+                    <p className="text-[#b9a89d] text-base text-center">@{user.username}</p>
+                    <p className="text-[#b9a89d] text-base text-center mt-1">{user.bio}</p>
+                  </div>
+                  {/* Stats */}
+                  <div className="flex gap-6 mt-2">
+                    <div className="text-center">
+                      <p className="text-white text-xl font-bold">{formatFollowers(user.followers)}</p>
+                      <p className="text-[#b9a89d] text-sm">Takipçi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white text-xl font-bold">{user.following}</p>
+                      <p className="text-[#b9a89d] text-sm">Takip</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white text-xl font-bold">{user.totalReviews || 0}</p>
+                      <p className="text-[#b9a89d] text-sm">Yorum</p>
+                    </div>
+                  </div>
+                  {/* Credibility Card */}
+                  <div className="w-full bg-[#27201c] rounded-xl p-4 mt-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-white font-bold">Güvenilirlik Puanı</p>
+                      <div className="flex items-center gap-1">
+                        <StarRating rating={Math.round(user.credibility)} />
+                        <span className="text-white font-bold ml-2">{user.credibility}/5</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#b9a89d]">Doğrulanmış Yorum</span>
+                      <span className="text-green-400">{user.verifiedReviews || 0} / {user.totalReviews || 0}</span>
+                    </div>
+                    <div className="w-full bg-[#392f28] rounded-full h-2 mt-2">
+                      <div className="bg-green-400 h-2 rounded-full" style={{width: `${((user.verifiedReviews || 0) / (user.totalReviews || 1)) * 100}%`}}></div>
+                    </div>
+                  </div>
+                  {!isOwnProfile && currentUser && (
+                    <button onClick={() => toggleFollow(user.id)} className={`px-8 py-3 rounded-xl font-bold ${isFollowing ? 'bg-[#392f28] text-white' : 'bg-primary text-white'}`}>
+                      {isFollowing ? 'Takipten Çık' : 'Takip Et'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="pb-3">
+                <div className="flex border-b border-[#54453b] px-4 gap-8">
+                  <a className="flex flex-col items-center justify-center border-b-[3px] border-b-white text-white pb-[13px] pt-4"><p className="text-sm font-bold">Gönderiler</p></a>
+                  <a className="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#b9a89d] pb-[13px] pt-4"><p className="text-sm font-bold">Önerilen</p></a>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-1">
+                {userPosts.length > 0 ? userPosts.map(post => (
+                  <div key={post.id} className="aspect-square bg-cover bg-center" style={{backgroundImage: `url("${post.image}")`}}></div>
+                )) : (
+                  <div className="col-span-3 py-12 text-center text-[#b9a89d]">Henüz gönderi yok</div>
+                )}
+              </div>
+              <div className="h-20"></div>
+            </div>
+            <div className="fixed bottom-0 w-full z-20">
+              <BottomNav active="profile" />
+            </div>
+          </div>
+        );
+      };
+
+      const ForgotPasswordPage = () => {
+        const navigate = useNavigate();
+        const { showToast } = useApp();
+        const [email, setEmail] = useState('');
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          showToast('Şifre sıfırlama linki gönderildi!');
+          setTimeout(() => navigate('/login'), 2000);
+        };
+
+        return (
+          <div className="bg-[#181411] min-h-screen flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-md">
+              <button onClick={() => navigate(-1)} className="text-white mb-4"><Icons.BackArrow /></button>
+              <div className="flex justify-center mb-8">
+                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-5xl">lock_reset</span>
+                </div>
+              </div>
+              <h1 className="text-white text-3xl font-bold text-center mb-3">Şifreni mi Unuttun?</h1>
+              <p className="text-[#b9a89d] text-center mb-8">E-posta adresini gir, sana şifre sıfırlama linki gönderelim.</p>
+              <form onSubmit={handleSubmit}>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-14 rounded-xl bg-[#392f28] text-white px-4 placeholder:text-[#b9a89d] focus:outline-none focus:ring-2 focus:ring-primary mb-4" placeholder="E-posta" type="email" required />
+                <button type="submit" className="w-full h-14 bg-primary text-white font-bold rounded-xl">Sıfırlama Linki Gönder</button>
+              </form>
+              <p className="text-[#b9a89d] text-center mt-8">Şifreni hatırlıyor musun? <Link to="/login" className="text-primary font-bold">Giriş Yap</Link></p>
+            </div>
+          </div>
+        );
+      };
+
+      // ==================== APP ====================
+      const App = () => {
+        return (
+          <AppProvider>
+            <MemoryRouter>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignUpPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/feed" element={<FeedPage />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/restaurant/:id" element={<RestaurantPage />} />
+                <Route path="/write-review/:id" element={<WriteReviewPage />} />
+                <Route path="/profile/:id" element={<ProfilePage />} />
+              </Routes>
+            </MemoryRouter>
+          </AppProvider>
+        );
+      };
+
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
